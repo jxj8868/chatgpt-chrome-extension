@@ -1,0 +1,31 @@
+{
+  "manifest_version": 3,
+  "name": "ChatEase",
+  "version": "1.0",
+  "description": "轻松聊天,ChatEase",
+  "permissions": ["sidePanel", "storage","script ing", "contextMenus", "notifications", "webRequest"],
+  "action": {
+    "default_title": "ChatEase",
+    "default_icon": {
+      "16": "icons/icon.png",
+      "32": "icons/icon.png",
+      "48": "icons/icon.png",
+      "128": "icons/icon.png"
+    },
+    "default_popup": "popup.html"
+  },
+  "side_panel":{
+    "default_path": "sidebar.html"
+  },
+  "options_page": "options.html",
+  "icons": {
+    "16": "icons/icon.png",
+    "32": "icons/icon.png",
+    "48": "icons/icon.png",
+    "128": "icons/icon.png"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "key": "LS0tLS1CRUdJTiBQVUJMSUMgS0VZLS0tLS0NCk1JSUJJakFOQmdrcWhraUc5dzBCQVFFRkFBT0NBUThBTUlJQkNnS0NBUUVBNCtwNzdjenZkRGI5cS9yNENBTTANCnU3NkxqcjhEc25iMjhWWVpyOUsvVkJkRlFWQjFOY2xQNWtUL0txWUVuM3dvQitqN2lKU0dtVXV4MURKNTUwN0QNCjVuNzJFODRwdVZuQ2R2SUQ4eFF1UndNYWtsUUpLeGhzWUMyYjRzWGxCaXN4RjI3UExIUGxtVElkTEtzSGZBemkNCisxcUZCS1RhM3pMRklnOWpzT2VrRlYyMVpMbWtaNXA0Qk9HaDAzMGNPelpKc1YwNVJqaFRwQUVUbUhkNVpvbWgNCkhaYW5uYk5WVjdUeHk3L1ptaS8wSnVscis1QWdGZUhRcFR3RGpianVLenB3WHUwYVZWeG5jZ296bTdIOG9ReTYNCjc1M0ZmMFVvZG5xNVYxY2N3bGM5L2d4c0I4TTdZaFJxc2ZuS01XSkRMcFBpT1hqS09jelEyakJDbDRQOU5KNm8NCml3SURBUUFCDQotLS0tLUVORCBQVUJMSUMgS0VZLS0tLS0NCg=="
+}
