@@ -33,9 +33,6 @@
     if(setting.apiUrl === ''){
       errors.apiUrl = '接口地址不能为空'
       isSub = false;
-    } else if(!isValidURL(setting.apiUrl)){
-      errors.apiUrl = '接口地址格式不正确'
-      isSub = false;
     }
 
     if(setting.token === ''){
@@ -44,7 +41,7 @@
     }
 
     if(setting.model === ''){
-      errors.apiUrl = '模型不能为空'
+      errors.model = '模型不能为空'
       isSub = false;
     }
 
@@ -53,7 +50,7 @@
     }
 
     if(typeof chrome.runtime !== 'undefined'){
-      chrome.storage.local.set("setting", setting);
+      chrome.storage.local.set({"setting": setting});
     } else {
       localStorage.setItem("setting", JSON.stringify(setting))
     }

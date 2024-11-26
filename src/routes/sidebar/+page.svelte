@@ -3,6 +3,20 @@
 	import { onMount } from 'svelte';
 	import { Avatar, CodeBlock } from '@skeletonlabs/skeleton';
 	import { browser } from '$app/environment';
+	import markdownit from 'markdown-it'
+	import hljs from 'highlight.js'
+
+	const md = markdownit({
+		highlight: function (str, lang) {
+			if (lang && hljs.getLanguage(lang)) {
+			try {
+				return hljs.highlight(str, { language: lang }).value;
+			} catch (__) {}
+			}
+
+			return ''; // use external default escaping
+		}
+	})
 
 	interface ChatMessage {
 		role: string;
@@ -33,24 +47,6 @@
 
 	// Messages
 	let messageFeed: MessageFeed[] = [
-		{
-			id: 0,
-			host: true,
-			avatar: 48,
-			name: 'Jane',
-			timestamp: 'Yesterday @ 2:30pm',
-			message: lorem,
-			color: 'variant-soft-primary'
-		},
-		{
-			id: 1,
-			host: false,
-			avatar: 14,
-			name: 'Michael',
-			timestamp: 'Yesterday @ 2:45pm',
-			message: lorem,
-			color: 'variant-soft-primary'
-		}
 	];
 	let currentMessage = '';
 
@@ -62,6 +58,11 @@
 
 	function getCurrentTimestamp(): string {
 		return new Date().toLocaleString('zh-CN', { hour: 'numeric', minute: 'numeric', hour12: true });
+	}
+
+	async function loadChatHistory(){
+		const messages = await getChatHistory();
+		messages.forEach(m => addMessage(m))
 	}
 
 	function addMessage(message: ChatMessage): void {
@@ -110,8 +111,9 @@
 		storeChatMessage(chatMessage)
 		const chatMessages: ChatMessage[] = await getChatHistory() || [];
 		const messages = chatMessages.map(e => {return {role: e.role, content: e.content}})
-		const completion = "很高兴见到你"//await chatCompletion(messages);
-		const replyChatMessage: ChatMessage = {role: "assistant", content: completion, type: "ai"}
+		const completion = await chatCompletion(messages);
+		const result = md.render(completion);
+		const replyChatMessage: ChatMessage = {role: "assistant", content: result, type: "ai"}
 		storeChatMessage(replyChatMessage)
 		return replyChatMessage;
 	}
@@ -143,21 +145,20 @@
 	 * @return [statusCode, message]
 	 */
 	async function chatCompletion(messages) {
-		const settings = await getSetting();
+		const setting = await getSetting();
 
-		const apiUrl = settings.apiUrl || '';
-		if(apiUrl == ''){
-			return [1, "API没有设置地址，请在MyChat插件扩展<a href='options.html' target='_blank'>选项</a>页面配置API地址"]
+		const apiUrl = setting.apiUrl || '';
+		if(apiUrl === ''){
+			console.log("API没有设置地址")
 		}
 
 		const postHeaders = {
 			"Content-Type": "application/json",
 		}
 
-		const tokenName = settings.tokenName || '';
-		const tokenValue = settings.tokenValue || '';
-		if(tokenName != '' && tokenValue != ''){
-			postHeaders[tokenName] = tokenValue;
+		const tokenValue = setting.token || '';
+		if(tokenValue != ''){
+			postHeaders['api-key'] = tokenValue;
 		}
 
 		const response = await fetch(apiUrl, {
@@ -183,11 +184,11 @@
 
 	async function getSetting(): Promise<Setting>{
 		if(typeof chrome.runtime !== 'undefined'){
-		await chrome.storage.local.get("setting")["setting"];
-		} else {
-		if(localStorage.getItem("setting")){
-			setting = JSON.parse(localStorage.getItem("setting"))
+			const store = await chrome.storage.local.get("setting");
+			return store.setting
 		}
+		if(localStorage.getItem("setting")){
+			return JSON.parse(localStorage.getItem("setting"))
 		}
 	}
 

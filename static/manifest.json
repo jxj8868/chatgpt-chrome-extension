@@ -3,7 +3,7 @@
   "name": "ChatEase",
   "version": "1.0",
   "description": "轻松聊天,ChatEase",
-  "permissions": ["sidePanel", "storage","script ing", "contextMenus", "notifications", "webRequest"],
+  "permissions": ["sidePanel", "storage","script ing", "contextMenus", "notifications", "webRequest", "https://wxchatbot-east-us.openai.azure.com/*"],
   "action": {
     "default_title": "ChatEase",
     "default_icon": {
