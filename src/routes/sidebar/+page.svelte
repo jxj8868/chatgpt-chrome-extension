@@ -145,6 +145,9 @@
 	 * @return [statusCode, message]
 	 */
 	async function chatCompletion(messages) {
+		if(!messages || messages.length == 0){
+			console.log("没有发送的内容")
+		}
 		const setting = await getSetting();
 
 		const apiUrl = setting.apiUrl || '';
