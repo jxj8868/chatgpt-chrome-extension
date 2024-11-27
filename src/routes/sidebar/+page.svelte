@@ -7,14 +7,16 @@
 	import hljs from 'highlight.js'
 
 	const md = markdownit({
+		html: true,
 		highlight: function (str, lang) {
 			if (lang && hljs.getLanguage(lang)) {
-			try {
-				return hljs.highlight(str, { language: lang }).value;
-			} catch (__) {}
-			}
-
-			return ''; // use external default escaping
+              try {
+                return '<pre><code class="hljs">' +
+                       hljs.highlight(str, { language: lang, ignoreIllegals: true }).value +
+                       '</code></pre>';
+              } catch (__) {}
+            }
+            return '<pre><code class="hljs">' + md.utils.escapeHtml(str) + '</code></pre>';
 		}
 	})
 
@@ -62,7 +64,9 @@
 
 	async function loadChatHistory(){
 		const messages = await getChatHistory();
-		messages.forEach(m => addMessage(m))
+		if(messages){
+			messages.forEach(m => addMessage(m))
+		}
 	}
 
 	function addMessage(message: ChatMessage): void {
@@ -72,7 +76,7 @@
 			avatar: message.type === "ai" ? 48 : 14,
 			name: message.type === "ai" ? 'GPT' : 'User',
 			timestamp: `Today @ ${getCurrentTimestamp()}`,
-			message: message.content,
+			message: md.render(message.content),
 			color: 'variant-soft-primary'
 		};
 		// Update the message feed
@@ -96,26 +100,32 @@
 		currentMessage = '';
 		pending = true
 		const assistantChatMessage: ChatMessage = await postMessage(userChatMessage)
-		addMessage(assistantChatMessage);
+		if(assistantChatMessage){
+			addMessage(assistantChatMessage);
+		}
 		pending = false
 	}
 
 	function onPromptKeydown(event: KeyboardEvent): void {
-		if (['Enter'].includes(event.code)) {
+		if (event.keyCode === 13 && (event.ctrlKey || event.altKey)) {
 			event.preventDefault();
-			sendMessage(currentMessage);
+			event.target.value += "\n";
+		} else if (event.keyCode === 13) {
+			event.preventDefault();
+			sendMessage();
 		}
 	}
 
 	async function postMessage(chatMessage: ChatMessage): Promise<ChatMessage> {
-		storeChatMessage(chatMessage)
 		const chatMessages: ChatMessage[] = await getChatHistory() || [];
+		chatMessages.push(chatMessage);
 		const messages = chatMessages.map(e => {return {role: e.role, content: e.content}})
 		const completion = await chatCompletion(messages);
-		const result = md.render(completion);
-		const replyChatMessage: ChatMessage = {role: "assistant", content: result, type: "ai"}
-		storeChatMessage(replyChatMessage)
-		return replyChatMessage;
+		if(completion){
+			const replyChatMessage: ChatMessage = {role: "assistant", content: completion, type: "ai"}
+			storeChatMessage(chatMessage, replyChatMessage)
+			return replyChatMessage;
+		}
 	}
 
 	async function getChatHistory(): Promise<ChatMessage[]> {
@@ -126,12 +136,14 @@
 			}
 			return null;
 		}
-		return await chrome.storage.local.get("chat_history")["chat_history"]
+		const store = await chrome.storage.local.get("chat_history")
+		return store.chat_history
 	}
 
-	async function storeChatMessage(chatMessage: ChatMessage): Promise<void> {
+	async function storeChatMessage(userMessage: ChatMessage, aiMessage: ChatMessage): Promise<void> {
 		const chatMessages: ChatMessage[] = await getChatHistory() || [];
-		chatMessages.push(chatMessage);
+		chatMessages.push(userMessage);
+		chatMessages.push(aiMessage);
 
 		if(!isExtensionEnv()){
 			localStorage.setItem("chat_history", JSON.stringify(chatMessages));
@@ -201,6 +213,7 @@
 
 	// When DOM mounted, scroll to bottom
 	onMount(() => {
+		loadChatHistory();
 		scrollChatBottom();
 	});
 </script>
@@ -222,7 +235,7 @@
                 <p class="font-bold">{bubble.name}</p>
                 <small class="opacity-50">{bubble.timestamp}</small>
               </header>
-              <p>{bubble.message}</p>
+              <p>{@html bubble.message}</p>
             </div>
           </div>
         {:else}
@@ -232,7 +245,7 @@
                 <p class="font-bold">{bubble.name}</p>
                 <small class="opacity-50">{bubble.timestamp}</small>
               </header>
-              <p>{bubble.message}</p>
+              <p>{@html bubble.message}</p>
             </div>
             <!-- <Avatar src="https://i.pravatar.cc/?img={bubble.avatar}" width="w-12" /> -->
           </div>
