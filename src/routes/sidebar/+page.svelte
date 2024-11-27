@@ -122,8 +122,21 @@
 
 	async function postMessage(chatMessage: ChatMessage): Promise<ChatMessage> {
 		const chatMessages: ChatMessage[] = await getChatHistory() || [];
-		chatMessages.push(chatMessage);
-		const messages = chatMessages.map(e => {return {role: e.role, content: e.content}})
+		const setting = await getSetting();
+		
+		let messages = [];
+		
+		// instruction
+		if(setting.instruction && setting.instruction.trim() !== ''){
+			messages.push({role: "system", content: setting.instruction});
+		}
+		
+		// history
+		chatMessages.forEach(e => {messages.push({role: e.role, content: e.content})})
+		
+		// user prompt
+		messages.push({role: chatMessage.role, content: chatMessage.content})
+
 		const completion = await chatCompletion(messages);
 		if(completion){
 			const replyChatMessage: ChatMessage = {role: "assistant", content: completion, type: "ai", timestamp: getCurrentTimestamp()}
