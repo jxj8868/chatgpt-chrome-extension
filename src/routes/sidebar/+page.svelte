@@ -2,23 +2,7 @@
 	import { faker } from '@faker-js/faker';
 	import { onMount } from 'svelte';
 	import { Avatar, CodeBlock } from '@skeletonlabs/skeleton';
-	import { browser } from '$app/environment';
-	import markdownit from 'markdown-it'
-	import hljs from 'highlight.js'
-
-	const md = markdownit({
-		html: true,
-		highlight: function (str, lang) {
-			if (lang && hljs.getLanguage(lang)) {
-              try {
-                return '<pre><code class="hljs">' +
-                       hljs.highlight(str, { language: lang, ignoreIllegals: true }).value +
-                       '</code></pre>';
-              } catch (__) {}
-            }
-            return '<pre><code class="hljs">' + md.utils.escapeHtml(str) + '</code></pre>';
-		}
-	})
+	import MarkdownRenderer from '$lib/markdown/MarkdownRenderer.svelte';
 
 	interface ChatMessage {
 		role: string;
@@ -68,6 +52,7 @@
 		if(messages){
 			messages.forEach(m => addMessage(m))
 		}
+		scrollChatBottom();
 	}
 
 	function addMessage(message: ChatMessage): void {
@@ -77,7 +62,7 @@
 			avatar: message.type === "ai" ? 48 : 14,
 			name: message.type === "ai" ? 'GPT' : 'User',
 			timestamp: message.timestamp,
-			message: md.render(message.content),
+			message: message.content,
 			color: 'variant-soft-primary'
 		};
 		// Update the message feed
@@ -92,6 +77,12 @@
 
 	function onSend(){
 		sendMessage(currentMessage)
+	}
+
+	function onClear(){
+		chrome.storage.local.remove("chat_history", () => {
+			messageFeed = [];
+		})
 	}
 
 	async function sendMessage(message: string){
@@ -175,6 +166,7 @@
 		const tokenValue = setting.token || '';
 		if(tokenValue != ''){
 			postHeaders['api-key'] = tokenValue;
+			postHeaders['Authorization'] = `Bearea ${tokenValue}`;
 		}
 
 		const response = await fetch(apiUrl, {
@@ -215,7 +207,6 @@
 	// When DOM mounted, scroll to bottom
 	onMount(() => {
 		loadChatHistory();
-		scrollChatBottom();
 	});
 </script>
 
@@ -223,10 +214,11 @@
   <title>ChatEase</title>
 </svelte:head>
 <div class="chat w-full h-screen grid grid-cols-1 lg:grid-cols-[30%_1fr]">
+  <div class="text-right px-5"><button class="anchor" on:click={onClear}>清空对话</button></div>
   <!-- Chat -->
   <div class="grid grid-row-[1fr_auto]">
     <!-- Conversation -->
-    <section bind:this={elemChat} class="h-full p-4 overflow-y-auto space-y-4 pb-[100px]">
+    <section bind:this={elemChat} class="h-[90vh] p-4 overflow-y-auto space-y-4 pb-[100px]">
       {#each messageFeed as bubble}
         {#if bubble.host === true}
           <div class="grid grid-cols-[auto_1fr] gap-2">
@@ -236,7 +228,7 @@
                 <p class="font-bold">{bubble.name}</p>
                 <small class="opacity-50">{bubble.timestamp}</small>
               </header>
-              <p>{@html bubble.message}</p>
+              <p><MarkdownRenderer content={bubble.message} /></p>
             </div>
           </div>
         {:else}
@@ -246,7 +238,7 @@
                 <p class="font-bold">{bubble.name}</p>
                 <small class="opacity-50">{bubble.timestamp}</small>
               </header>
-              <p>{@html bubble.message}</p>
+              <p><MarkdownRenderer content={bubble.message} /></p>
             </div>
             <!-- <Avatar src="https://i.pravatar.cc/?img={bubble.avatar}" width="w-12" /> -->
           </div>
@@ -254,8 +246,8 @@
       {/each}
     </section>
     <!-- Prompt -->
-    <section class="border-t border-surface-500/30 p-4 fixed bottom-0 left-0">
-      <div class="input-group input-group-divider grid-cols-[auto_1fr_auto] rounded-container-token">
+    <section class="border-t border-surface-500/30 p-4 fixed bottom-0 left-0 w-full">
+      <div class="input-group input-group-divider grid-cols-[auto_1fr_auto] rounded-container-token w-full">
         <button class="input-group-shim">+</button>
         <textarea
           bind:value={currentMessage}
