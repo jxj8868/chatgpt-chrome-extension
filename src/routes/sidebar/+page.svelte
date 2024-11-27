@@ -24,6 +24,7 @@
 		role: string;
 		content: string;
 		type: string;
+		timestamp: string;
 	}
 
 	interface Setting {
@@ -75,7 +76,7 @@
 			host: message.type === "ai",
 			avatar: message.type === "ai" ? 48 : 14,
 			name: message.type === "ai" ? 'GPT' : 'User',
-			timestamp: `Today @ ${getCurrentTimestamp()}`,
+			timestamp: message.timestamp,
 			message: md.render(message.content),
 			color: 'variant-soft-primary'
 		};
@@ -94,7 +95,7 @@
 	}
 
 	async function sendMessage(message: string){
-		const userChatMessage = {role: "user", content: message, type: "user"}
+		const userChatMessage: ChatMessage = {role: "user", content: message, type: "user", timestamp: getCurrentTimestamp()}
 		addMessage(userChatMessage)
 		// Clear prompt
 		currentMessage = '';
@@ -112,7 +113,7 @@
 			event.target.value += "\n";
 		} else if (event.keyCode === 13) {
 			event.preventDefault();
-			sendMessage();
+			sendMessage(currentMessage);
 		}
 	}
 
@@ -122,7 +123,7 @@
 		const messages = chatMessages.map(e => {return {role: e.role, content: e.content}})
 		const completion = await chatCompletion(messages);
 		if(completion){
-			const replyChatMessage: ChatMessage = {role: "assistant", content: completion, type: "ai"}
+			const replyChatMessage: ChatMessage = {role: "assistant", content: completion, type: "ai", timestamp: getCurrentTimestamp()}
 			storeChatMessage(chatMessage, replyChatMessage)
 			return replyChatMessage;
 		}
